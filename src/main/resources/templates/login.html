@@ -1,0 +1,9 @@
+<body>
+<h1>用戶登錄</h1>
+<form th:action = "@{/login}" method="post">
+    用戶名：<input type="text" name="username"><br/>
+    密碼：<input type="password" name="password"><br/>
+    <input type="submit" value="登錄"><br/>
+</form>
+<span th:text = "${msg}" style="color:red"></span><br/>
+</body>

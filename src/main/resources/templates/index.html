@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th = "http://thymeleaf.org"
+      xmlns:sec = "http://www.thymeleaf.org/extras/spring-security"
+>
+<head>
+    <meta charset = "UTF-8">
+    <title>index</title>
+</head>
+<body>
+
+<h1>主頁</h1>
+
+<div>
+    <span sec:authorize = "!isAuthenticated()">
+        <a th:href = "@{/toLogin}">登錄</a>
+    </span> &nbsp;&nbsp;
+    <span sec:authorize = "isAuthenticated()">
+        <a th:href = "@{/logout}">註銷</a>
+    </span> &nbsp;&nbsp;
+    用戶名：<span sec:authentication = "name"></span>
+</div>
+
+<div class="menu" sec:authorize = "hasRole('ROLE_role1')">
+    <h2>menu1</h2>
+        <a th:href = "@{/menu1/1}">menu1_1</a><br/>
+        <a th:href = "@{/menu1/2}">menu1_2</a><br/>
+        <a th:href = "@{/menu1/3}">menu1_3</a><br/>
+</div>
+
+<div class="menu" sec:authorize = "hasRole('ROLE_role2')">
+    <h2>menu2</h2>
+        <a th:href = "@{/menu2/1}">menu2_1</a><br/>
+        <a th:href = "@{/menu2/2}">menu2_2</a><br/>
+        <a th:href = "@{/menu2/3}">menu2_3</a><br/>
+</div>
+
+
+<div class="menu" sec:authorize = "hasRole('ROLE_role3')">
+    <h2>menu3</h2>
+        <a th:href = "@{/menu3/1}">menu3_1</a><br/>
+        <a th:href = "@{/menu3/2}">menu3_2</a><br/>
+        <a th:href = "@{/menu3/3}">menu3_3</a><br/>
+</div>
+
+</body>
+</html>
