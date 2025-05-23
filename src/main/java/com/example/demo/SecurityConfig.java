@@ -1,84 +1,96 @@
 package com.example.demo;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.util.UUID;
 
-import com.example.demo.controller.SecurityController;
-import lombok.AllArgsConstructor;
+import com.example.demo.repository.ClientRepository;
+import com.example.demo.repository.JpaRegisteredClientRepository;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
+import com.nimbusds.jose.jwk.source.JWKSource;
+import com.nimbusds.jose.proc.SecurityContext;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
+import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
+import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
+import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.access.AccessDeniedHandler;
-import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
-
-import java.io.PrintWriter;
 
 @Configuration
+@EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
-    PasswordEncoder passwordEncoder() {
-        // 密碼的加密方式
-        return new BCryptPasswordEncoder();
-    }
+    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http)
+            throws Exception {
+        OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
+                OAuth2AuthorizationServerConfigurer.authorizationServer();
 
-    @Bean
-    public UserDetailsService userDetailsService() {
-        InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
-
-        // 創造角色
-        UserDetails admin = User.withUsername("admin").password(passwordEncoder().encode("123")).roles("role1", "role2", "role3").build();
-        UserDetails user1 = User.withUsername("user1").password(passwordEncoder().encode("123")).roles("role1").build();
-        UserDetails user2 = User.withUsername("user2").password(passwordEncoder().encode("123")).roles("role2").build();
-        UserDetails user3 = User.withUsername("user3").password(passwordEncoder().encode("123")).roles("role3").build();
-
-        manager.createUser(admin);
-        manager.createUser(user1);
-        manager.createUser(user2);
-        manager.createUser(user3);
-
-        return manager;
-    }
-
-    @Bean
-    public WebSecurityCustomizer webSecurityCustomizer() {
-        // 靜態資源可以自由訪問
-        return (web) -> web.ignoring().requestMatchers("/js/**", "/css/**", "/images/**");
-    }
-
-    @Bean
-    SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        return http
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/index").permitAll()
-                        .anyRequest().authenticated()
+        http
+                .securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
+                .with(authorizationServerConfigurer, (authorizationServer) ->
+                        authorizationServer
+                                .oidc(Customizer.withDefaults())	// Enable OpenID Connect 1.0
                 )
-                .formLogin(form -> form
-                        .loginPage("/toLogin")
-                        .usernameParameter("username")
-                        .passwordParameter("password")
-                        .permitAll()
-                )
-                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests((authorize) ->
+                        authorize
+                                .anyRequest().authenticated()
+                );
+
+        return http.build();
+    }
+
+    @Bean
+    public RegisteredClientRepository registeredClientRepository(ClientRepository clientRepository) {
+        return new JpaRegisteredClientRepository(clientRepository);
+        // 這代表你用官方提供的 JpaRegisteredClientRepository 作為 SAS 所需的 RegisteredClientRepository 實作，
+        // 但資料存取邏輯交給你自己寫的 JPA 介面來做。
+        // 我找不到那個 dependency?
+    }
+
+    @Bean
+    public JWKSource<SecurityContext> jwkSource() {
+        // The JWK Set endpoint is configured only if a JWKSource<SecurityContext> @Bean is registered.
+        KeyPair keyPair = generateRsaKey();
+        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
+        RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
+        RSAKey rsaKey = new RSAKey.Builder(publicKey)
+                .privateKey(privateKey)
+                .keyID(UUID.randomUUID().toString())
                 .build();
+        JWKSet jwkSet = new JWKSet(rsaKey);
+        return new ImmutableJWKSet<>(jwkSet);
+    }
+
+    private static KeyPair generateRsaKey() {
+        KeyPair keyPair;
+        try {
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+            keyPairGenerator.initialize(2048);
+            keyPair = keyPairGenerator.generateKeyPair();
+        }
+        catch (Exception ex) {
+            throw new IllegalStateException(ex);
+        }
+        return keyPair;
     }
 
     @Bean
-    public AuthenticationSuccessHandler loginSuccessHandler() {
-        // 登入成功後的處理邏輯
-        return (request, response, authentication) -> {
-            response.setContentType("application/json;charset=utf-8");
-            PrintWriter out = response.getWriter();
-            String json = "{\"status\": \"ok\", \"msg\": \"登錄成功\"}";
-            out.write(json);
-        };
+    public JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource) {
+        return OAuth2AuthorizationServerConfiguration.jwtDecoder(jwkSource);
+    }
+
+    @Bean
+    public AuthorizationServerSettings authorizationServerSettings() {
+        return AuthorizationServerSettings.builder().build();
     }
 }
