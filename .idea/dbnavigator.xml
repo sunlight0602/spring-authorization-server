@@ -35,9 +35,7 @@ select * from client;]]></console>
     <last-used-providers />
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
-    <open-files>
-      <object connection-id="2fbae384-31ec-448b-9085-6886ef1b89dc" object-ref="consoles/Connection" />
-    </open-files>
+    <open-files />
   </component>
   <component name="DBNavigator.Project.DatabaseSessionManager">
     <connection id="2fbae384-31ec-448b-9085-6886ef1b89dc" />

@@ -32,8 +32,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http)
             throws Exception {
+        // OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
+        //         OAuth2AuthorizationServerConfigurer.authorizationServer();
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
-                OAuth2AuthorizationServerConfigurer.authorizationServer();
+                new OAuth2AuthorizationServerConfigurer();
 
         http
                 .securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
@@ -44,7 +46,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests((authorize) ->
                         authorize
                                 .anyRequest().authenticated()
-                );
+                )
+                .csrf(csrf -> csrf.disable());  // 測試階段
 
         return http.build();
     }
