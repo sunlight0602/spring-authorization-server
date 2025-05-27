@@ -6,7 +6,7 @@
   </component>
   <component name="DBNavigator.Project.DataEditorManager">
     <record-view-column-sorting-type value="BY_INDEX" />
-    <value-preview-text-wrapping value="true" />
+    <value-preview-text-wrapping value="false" />
     <value-preview-pinned value="false" />
   </component>
   <component name="DBNavigator.Project.DatabaseAssistantManager">
@@ -24,7 +24,7 @@
   </component>
   <component name="DBNavigator.Project.DatabaseConsoleManager">
     <connection id="2fbae384-31ec-448b-9085-6886ef1b89dc">
-      <console name="Connection" type="STANDARD" schema="mysql" session="Main"><![CDATA[show databases;
+      <console name="Connection" type="STANDARD" schema="demo" session="Main"><![CDATA[show databases;
 use demo;
 show tables;
 describe client;
@@ -35,7 +35,9 @@ select * from client;]]></console>
     <last-used-providers />
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
-    <open-files />
+    <open-files>
+      <object connection-id="2fbae384-31ec-448b-9085-6886ef1b89dc" object-ref="consoles/Connection" />
+    </open-files>
   </component>
   <component name="DBNavigator.Project.DatabaseSessionManager">
     <connection id="2fbae384-31ec-448b-9085-6886ef1b89dc" />

@@ -10,6 +10,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.jackson2.SecurityJackson2Modules;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -23,6 +24,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 // @Component
+@Slf4j
 public class JpaRegisteredClientRepository implements RegisteredClientRepository {
     private final ClientRepository clientRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -66,6 +68,10 @@ public class JpaRegisteredClientRepository implements RegisteredClientRepository
         //         client.getPostLogoutRedirectUris());
         Set<String> clientScopes = StringUtils.commaDelimitedListToSet(
                 client.getScopes());
+        // log.warn(clientScopes);
+        System.out.println(clientScopes);
+
+
 
         RegisteredClient.Builder builder = RegisteredClient.withId(client.getId())
                 .clientId(client.getClientId())
@@ -88,8 +94,9 @@ public class JpaRegisteredClientRepository implements RegisteredClientRepository
         //
         // Map<String, Object> tokenSettingsMap = parseMap(client.getTokenSettings());
         // builder.tokenSettings(TokenSettings.withSettings(tokenSettingsMap).build());
-
-        return builder.build();
+        RegisteredClient tmp = builder.build();
+        System.out.println(tmp.getScopes());
+        return tmp;
     }
 
     private Client toEntity(RegisteredClient registeredClient) {
