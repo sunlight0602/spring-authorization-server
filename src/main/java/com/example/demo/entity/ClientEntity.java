@@ -1,18 +1,15 @@
 package com.example.demo.entity;
 
-import java.time.Instant;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
-import lombok.Setter;
 
 @Entity
 @Table(name = "client")
 @Data
-public class Client {
+public class ClientEntity {
     @Id
     private String id;
     private String clientId;
@@ -24,8 +21,8 @@ public class Client {
     // private String clientName;
     // @Column(length = 1000)
     // private String clientAuthenticationMethods;
-    @Column(length = 100)
-    private String authorizationGrantTypes;
+    // @Column(length = 100)
+    // private String authorizationGrantTypes;
     // @Column(length = 1000)
     // private String redirectUris;
     // @Column(length = 1000)

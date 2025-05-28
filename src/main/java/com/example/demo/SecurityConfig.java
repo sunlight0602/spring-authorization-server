@@ -3,37 +3,33 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
-import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import com.example.demo.repository.ClientRepository;
 import com.example.demo.repository.JpaRegisteredClientRepository;
+import com.example.demo.tokenexchange.IdTokenAuthenticationConverter;
 import com.example.demo.tokenexchange.TokenExchangeAuthenticationConverter;
-import com.example.demo.tokenexchange.TokenExchangeAuthenticationProvider;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
-import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.token.*;
-import org.springframework.security.oauth2.server.authorization.web.authentication.DelegatingAuthenticationConverter;
 import org.springframework.security.oauth2.server.authorization.web.authentication.OAuth2ClientCredentialsAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationConverter;
 
 @Configuration
 @EnableWebSecurity
@@ -58,13 +54,9 @@ public class SecurityConfig {
 
         authorizationServerConfigurer
             .tokenEndpoint(tokenEndpoint -> tokenEndpoint
-                .accessTokenRequestConverter(new DelegatingAuthenticationConverter(
-                    List.of(
-                        new TokenExchangeAuthenticationConverter(registeredClientRepository),
-                        new OAuth2ClientCredentialsAuthenticationConverter() // 仍保留原本的 flow
-                    )
-                ))
-                .authenticationProvider(new TokenExchangeAuthenticationProvider(jwkSource, tokenGenerator, registeredClientRepository))
+                .accessTokenRequestConverter(authenticationConverter())
+                .authenticationProvider(new ServiceAccountAuthenticationProvider(...))
+                .authenticationProvider(new IdTokenAuthenticationProvider(...))
             );
         http.apply(authorizationServerConfigurer);
         return http.build();
@@ -134,5 +126,19 @@ public class SecurityConfig {
             refreshTokenGenerator
         );
     }
+
+    @Bean
+    public AuthenticationConverter authenticationConverter() {
+        return request -> {
+            String grantType = request.getParameter(OAuth2ParameterNames.GRANT_TYPE);
+            if ("client_credentials".equals(grantType)) {
+                return new OAuth2ClientCredentialsAuthenticationConverter().convert(request);
+            } else if ("urn:ietf:params:oauth:grant-type:token-exchange".equals(grantType)) {
+                return new IdTokenAuthenticationConverter().convert(request);
+            }
+            return null;
+        };
+    }
+
 
 }
